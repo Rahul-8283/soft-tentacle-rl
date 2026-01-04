@@ -1,0 +1,93 @@
+<mujoco model="stage2_five_link_chain">
+
+    <!-- ===================== -->
+    <!--  GLOBAL OPTIONS       -->
+    <!-- ===================== -->
+    <option timestep="0.002" gravity="0 0 -9.81" integrator="RK4"/>
+
+    <!-- ===================== -->
+    <!--  VISUAL SETTINGS      -->
+    <!-- ===================== -->
+    <visual>
+        <global offwidth="800" offheight="600"/>
+    </visual>
+
+    <!-- ===================== -->
+    <!--  DEFAULTS             -->
+    <!-- ===================== -->
+    <default>
+        <joint
+            type="hinge"
+            axis="0 1 0"
+            damping="0.2"
+            limited="true"
+            range="-60 60"/>
+
+        <geom
+            type="capsule"
+            size="0.03"
+            density="1000"
+            friction="1 0.1 0.1"
+            rgba="0.2 0.6 0.9 1"/>
+
+        <motor
+            ctrllimited="true"
+            ctrlrange="-1 1"/>
+    </default>
+
+    <!-- ===================== -->
+    <!--  WORLD BODY           -->
+    <!-- ===================== -->
+    <worldbody>
+
+        <!-- Ground plane -->
+        <geom type="plane" size="5 5 0.1" rgba="0.9 0.9 0.9 1"/>
+
+        <!-- Fixed base -->
+        <body name="base" pos="0 0 0.1">
+
+            <!-- Link 1 -->
+            <body name="link1" pos="0 0 0">
+                <joint name="j1"/>
+                <geom fromto="0 0 0  0 0 0.25"/>
+
+                <!-- Link 2 -->
+                <body name="link2" pos="0 0 0.25">
+                    <joint name="j2"/>
+                    <geom fromto="0 0 0  0 0 0.25"/>
+
+                    <!-- Link 3 -->
+                    <body name="link3" pos="0 0 0.25">
+                        <joint name="j3"/>
+                        <geom fromto="0 0 0  0 0 0.25"/>
+
+                        <!-- Link 4 -->
+                        <body name="link4" pos="0 0 0.25">
+                            <joint name="j4"/>
+                            <geom fromto="0 0 0  0 0 0.25"/>
+
+                            <!-- Link 5 -->
+                            <body name="link5" pos="0 0 0.25">
+                                <joint name="j5"/>
+                                <geom fromto="0 0 0  0 0 0.25"/>
+                            </body>
+
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+
+    <!-- ===================== -->
+    <!--  ACTUATORS            -->
+    <!-- ===================== -->
+    <actuator>
+        <motor name="m1" joint="j1" gear="1"/>
+        <motor name="m2" joint="j2" gear="1"/>
+        <motor name="m3" joint="j3" gear="1"/>
+        <motor name="m4" joint="j4" gear="1"/>
+        <motor name="m5" joint="j5" gear="1"/>
+    </actuator>
+
+</mujoco>

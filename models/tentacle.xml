@@ -1,0 +1,374 @@
+<!--
+================================================================================
+    SOFT ROBOTIC TENTACLE - MuJoCo Model
+================================================================================
+    
+    Model: 5-Segment 3D Soft Robotic Tentacle
+    Author: Soft Tentacle RL Team
+    Date: January 2026
+    
+    DESCRIPTION:
+    ------------
+    A tendon-driven soft robotic tentacle with 5 segments capable of full 3D motion.
+    Each segment has 2 degrees of freedom (DOF):
+      - PITCH: Bends forward/backward (rotation around Y-axis)
+      - YAW:   Bends left/right (rotation around X-axis)
+    
+    STRUCTURE:
+    ----------
+    Total Segments: 5
+    Total Joints:   10 (2 per segment: pitch + yaw)
+    Total Motors:   10 (1 per joint)
+    Total Length:   ~1.25m (5 × 0.25m per segment)
+    
+    NAMING CONVENTION:
+    ------------------
+    Joints:  j1_pitch, j1_yaw, j2_pitch, j2_yaw, ... j5_pitch, j5_yaw
+    Motors:  m1_pitch, m1_yaw, m2_pitch, m2_yaw, ... m5_pitch, m5_yaw
+    Bodies:  link1, link2, link3, link4, link5
+    
+    FOR GYM ENVIRONMENT:
+    --------------------
+    Action Space:      Box(-1, 1, shape=(10,))  -> 10 motor commands
+    Joint Positions:   10 values (qpos)
+    Joint Velocities:  10 values (qvel)
+    Tip Body:          "link5" (end effector)
+    
+    COORDINATE SYSTEM:
+    ------------------
+    X-axis: Right
+    Y-axis: Forward  
+    Z-axis: Up (gravity is -Z)
+    
+    Base is fixed at position (0, 0, 0.1) - slightly above ground
+    
+================================================================================
+-->
+
+<mujoco model="soft_tentacle_3d">
+
+    <!-- ===================================================================== -->
+    <!--  COMPILER SETTINGS                                                    -->
+    <!-- ===================================================================== -->
+    <!-- 
+        angle="radian": All angle values are in radians
+        coordinate="local": Body positions are relative to parent
+    -->
+    <compiler angle="radian" coordinate="local"/>
+
+    <!-- ===================================================================== -->
+    <!--  SIMULATION OPTIONS                                                   -->
+    <!-- ===================================================================== -->
+    <!--
+        timestep: 0.002s = 500Hz simulation (good for soft robotics)
+        gravity:  Earth gravity pointing down (-Z)
+        integrator: RK4 for accurate physics (Runge-Kutta 4th order)
+    -->
+    <option timestep="0.002" gravity="0 0 -9.81" integrator="RK4"/>
+
+    <!-- ===================================================================== -->
+    <!--  VISUAL SETTINGS                                                      -->
+    <!-- ===================================================================== -->
+    <visual>
+        <global offwidth="1280" offheight="720"/>
+        <quality shadowsize="4096"/>
+        <map force="0.1" zfar="30"/>
+    </visual>
+
+    <!-- ===================================================================== -->
+    <!--  ASSETS (Colors, Materials)                                           -->
+    <!-- ===================================================================== -->
+    <asset>
+        <!-- Ground texture -->
+        <texture type="2d" name="grid_texture" builtin="checker" 
+                 width="512" height="512" rgb1="0.9 0.9 0.9" rgb2="0.7 0.7 0.7"/>
+        <material name="grid_material" texture="grid_texture" 
+                  texrepeat="10 10" reflectance="0.1"/>
+        
+        <!-- Tentacle segment colors (gradient from base to tip) -->
+        <material name="tentacle_base" rgba="0.2 0.4 0.8 1"/>
+        <material name="tentacle_seg1" rgba="0.25 0.45 0.82 1"/>
+        <material name="tentacle_seg2" rgba="0.3 0.5 0.84 1"/>
+        <material name="tentacle_seg3" rgba="0.35 0.55 0.86 1"/>
+        <material name="tentacle_seg4" rgba="0.4 0.6 0.88 1"/>
+        <material name="tentacle_tip"  rgba="0.5 0.7 0.95 1"/>
+        
+        <!-- Target marker -->
+        <material name="target_material" rgba="1 0.2 0.2 0.8"/>
+    </asset>
+
+    <!-- ===================================================================== -->
+    <!--  DEFAULT PROPERTIES                                                   -->
+    <!-- ===================================================================== -->
+    <!--
+        These defaults apply to all joints, geoms, and motors unless overridden.
+        
+        JOINT DEFAULTS:
+        - type="hinge": Revolute/rotational joint
+        - damping=0.5: Viscous damping to prevent oscillations
+        - limited=true: Joint limits are enforced
+        - range: ±45° (±0.785 rad) - realistic for soft robot segments
+        
+        GEOM DEFAULTS:
+        - type="capsule": Cylinder with hemispherical ends (smooth collisions)
+        - size=0.025: Radius of 2.5cm (diameter = 5cm)
+        - density=1000: Same as water (1000 kg/m³)
+        
+        MOTOR DEFAULTS:
+        - ctrllimited=true: Control signals are bounded
+        - ctrlrange="-1 1": Normalized control input [-1, +1]
+        - gear=50: Torque multiplier (motor_torque = gear × control)
+    -->
+    <default>
+        <!-- Default class for all elements -->
+        <default class="tentacle">
+            <joint type="hinge" 
+                   damping="0.5" 
+                   limited="true" 
+                   range="-0.785 0.785"
+                   armature="0.01"/>
+            
+            <geom type="capsule" 
+                  size="0.025" 
+                  density="1000" 
+                  friction="1 0.5 0.5"
+                  contype="1" 
+                  conaffinity="1"/>
+            
+            <motor ctrllimited="true" 
+                   ctrlrange="-1 1" 
+                   gear="50"/>
+        </default>
+        
+        <!-- Pitch joints - rotation around Y-axis (forward/backward bending) -->
+        <default class="pitch_joint">
+            <joint axis="0 1 0"/>
+        </default>
+        
+        <!-- Yaw joints - rotation around X-axis (left/right bending) -->
+        <default class="yaw_joint">
+            <joint axis="1 0 0"/>
+        </default>
+    </default>
+
+    <!-- ===================================================================== -->
+    <!--  WORLD BODY (Scene Setup)                                             -->
+    <!-- ===================================================================== -->
+    <worldbody>
+        
+        <!-- ============== LIGHTING ============== -->
+        <light name="main_light" pos="0 0 3" dir="0 0 -1" 
+               diffuse="1 1 1" specular="0.3 0.3 0.3"/>
+        <light name="side_light" pos="2 2 2" dir="-1 -1 -1" 
+               diffuse="0.5 0.5 0.5"/>
+        
+        <!-- ============== GROUND PLANE ============== -->
+        <geom name="ground" type="plane" size="5 5 0.1" 
+              material="grid_material" contype="1" conaffinity="1"/>
+
+        <!-- ============== TARGET MARKER ============== -->
+        <!--
+            This is a visual target sphere for reaching tasks.
+            mocap="true" means it can be moved programmatically without physics.
+            The Gym environment will control this position.
+        -->
+        <body name="target" pos="0.5 0.3 0.8" mocap="true">
+            <geom name="target_geom" type="sphere" size="0.04" 
+                  material="target_material" contype="0" conaffinity="0"/>
+        </body>
+
+        <!-- ============================================================== -->
+        <!--  TENTACLE KINEMATIC CHAIN                                      -->
+        <!-- ============================================================== -->
+        <!--
+            STRUCTURE:
+            
+            Fixed Base (at z=0.1, slightly above ground)
+                │
+                └── Link 1 (length=0.25m)
+                    ├── j1_pitch (Y-axis rotation)
+                    ├── j1_yaw   (X-axis rotation)
+                    │
+                    └── Link 2 (length=0.25m)
+                        ├── j2_pitch
+                        ├── j2_yaw
+                        │
+                        └── Link 3 (length=0.25m)
+                            ├── j3_pitch
+                            ├── j3_yaw
+                            │
+                            └── Link 4 (length=0.25m)
+                                ├── j4_pitch
+                                ├── j4_yaw
+                                │
+                                └── Link 5 (length=0.25m) ← TIP/END EFFECTOR
+                                    ├── j5_pitch
+                                    └── j5_yaw
+        -->
+        
+        <!-- FIXED BASE - Anchored to world -->
+        <body name="base" pos="0 0 0.1">
+            <geom name="base_geom" type="cylinder" size="0.05 0.02" 
+                  rgba="0.3 0.3 0.3 1" mass="1"/>
+            
+            <!-- ==================== LINK 1 ==================== -->
+            <body name="link1" pos="0 0 0.02">
+                <!--
+                    JOINT 1 - PITCH (forward/backward bending)
+                    Rotates around Y-axis
+                -->
+                <joint name="j1_pitch" class="tentacle pitch_joint"/>
+                
+                <!--
+                    JOINT 1 - YAW (left/right bending)  
+                    Rotates around X-axis
+                -->
+                <joint name="j1_yaw" class="tentacle yaw_joint"/>
+                
+                <!-- Link 1 geometry: capsule from origin to 0.25m up -->
+                <geom name="link1_geom" class="tentacle" 
+                      fromto="0 0 0  0 0 0.25" material="tentacle_seg1"/>
+                
+                <!-- Site at end of link (for measurements/sensors) -->
+                <site name="link1_end" pos="0 0 0.25" size="0.01"/>
+                
+                <!-- ==================== LINK 2 ==================== -->
+                <body name="link2" pos="0 0 0.25">
+                    <joint name="j2_pitch" class="tentacle pitch_joint"/>
+                    <joint name="j2_yaw" class="tentacle yaw_joint"/>
+                    
+                    <geom name="link2_geom" class="tentacle" 
+                          fromto="0 0 0  0 0 0.25" material="tentacle_seg2"/>
+                    
+                    <site name="link2_end" pos="0 0 0.25" size="0.01"/>
+                    
+                    <!-- ==================== LINK 3 ==================== -->
+                    <body name="link3" pos="0 0 0.25">
+                        <joint name="j3_pitch" class="tentacle pitch_joint"/>
+                        <joint name="j3_yaw" class="tentacle yaw_joint"/>
+                        
+                        <geom name="link3_geom" class="tentacle" 
+                              fromto="0 0 0  0 0 0.25" material="tentacle_seg3"/>
+                        
+                        <site name="link3_end" pos="0 0 0.25" size="0.01"/>
+                        
+                        <!-- ==================== LINK 4 ==================== -->
+                        <body name="link4" pos="0 0 0.25">
+                            <joint name="j4_pitch" class="tentacle pitch_joint"/>
+                            <joint name="j4_yaw" class="tentacle yaw_joint"/>
+                            
+                            <geom name="link4_geom" class="tentacle" 
+                                  fromto="0 0 0  0 0 0.25" material="tentacle_seg4"/>
+                            
+                            <site name="link4_end" pos="0 0 0.25" size="0.01"/>
+                            
+                            <!-- ==================== LINK 5 (TIP) ==================== -->
+                            <body name="link5" pos="0 0 0.25">
+                                <joint name="j5_pitch" class="tentacle pitch_joint"/>
+                                <joint name="j5_yaw" class="tentacle yaw_joint"/>
+                                
+                                <geom name="link5_geom" class="tentacle" 
+                                      fromto="0 0 0  0 0 0.25" material="tentacle_tip"/>
+                                
+                                <!--
+                                    TIP SITE - End Effector Position
+                                    Use this site to get the tip position in your Gym environment:
+                                    tip_pos = data.site_xpos[model.site_name2id('tip')]
+                                -->
+                                <site name="tip" pos="0 0 0.25" size="0.015" rgba="1 0 0 1"/>
+                                
+                            </body> <!-- end link5 -->
+                        </body> <!-- end link4 -->
+                    </body> <!-- end link3 -->
+                </body> <!-- end link2 -->
+            </body> <!-- end link1 -->
+        </body> <!-- end base -->
+        
+    </worldbody>
+
+    <!-- ===================================================================== -->
+    <!--  ACTUATORS (Motors)                                                   -->
+    <!-- ===================================================================== -->
+    <!--
+        10 MOTORS - One for each joint
+        
+        Control order (for action vector):
+        action[0] = m1_pitch,  action[1] = m1_yaw
+        action[2] = m2_pitch,  action[3] = m2_yaw
+        action[4] = m3_pitch,  action[5] = m3_yaw
+        action[6] = m4_pitch,  action[7] = m4_yaw
+        action[8] = m5_pitch,  action[9] = m5_yaw
+        
+        In Gym environment:
+        action = np.array([pitch1, yaw1, pitch2, yaw2, ..., pitch5, yaw5])
+    -->
+    <actuator>
+        <!-- Segment 1 motors -->
+        <motor name="m1_pitch" class="tentacle" joint="j1_pitch"/>
+        <motor name="m1_yaw"   class="tentacle" joint="j1_yaw"/>
+        
+        <!-- Segment 2 motors -->
+        <motor name="m2_pitch" class="tentacle" joint="j2_pitch"/>
+        <motor name="m2_yaw"   class="tentacle" joint="j2_yaw"/>
+        
+        <!-- Segment 3 motors -->
+        <motor name="m3_pitch" class="tentacle" joint="j3_pitch"/>
+        <motor name="m3_yaw"   class="tentacle" joint="j3_yaw"/>
+        
+        <!-- Segment 4 motors -->
+        <motor name="m4_pitch" class="tentacle" joint="j4_pitch"/>
+        <motor name="m4_yaw"   class="tentacle" joint="j4_yaw"/>
+        
+        <!-- Segment 5 motors -->
+        <motor name="m5_pitch" class="tentacle" joint="j5_pitch"/>
+        <motor name="m5_yaw"   class="tentacle" joint="j5_yaw"/>
+    </actuator>
+
+    <!-- ===================================================================== -->
+    <!--  SENSORS (Optional - for observation building)                        -->
+    <!-- ===================================================================== -->
+    <!--
+        These sensors provide clean access to joint states and tip position.
+        Access in MuJoCo: data.sensordata
+        
+        Sensor order in data.sensordata:
+        [0-9]:   Joint positions (j1_pitch, j1_yaw, ..., j5_pitch, j5_yaw)
+        [10-19]: Joint velocities
+        [20-22]: Tip position (x, y, z)
+        [23-31]: Tip orientation (3x3 rotation matrix flattened)
+    -->
+    <sensor>
+        <!-- Joint position sensors -->
+        <jointpos name="sens_j1_pitch_pos" joint="j1_pitch"/>
+        <jointpos name="sens_j1_yaw_pos"   joint="j1_yaw"/>
+        <jointpos name="sens_j2_pitch_pos" joint="j2_pitch"/>
+        <jointpos name="sens_j2_yaw_pos"   joint="j2_yaw"/>
+        <jointpos name="sens_j3_pitch_pos" joint="j3_pitch"/>
+        <jointpos name="sens_j3_yaw_pos"   joint="j3_yaw"/>
+        <jointpos name="sens_j4_pitch_pos" joint="j4_pitch"/>
+        <jointpos name="sens_j4_yaw_pos"   joint="j4_yaw"/>
+        <jointpos name="sens_j5_pitch_pos" joint="j5_pitch"/>
+        <jointpos name="sens_j5_yaw_pos"   joint="j5_yaw"/>
+        
+        <!-- Joint velocity sensors -->
+        <jointvel name="sens_j1_pitch_vel" joint="j1_pitch"/>
+        <jointvel name="sens_j1_yaw_vel"   joint="j1_yaw"/>
+        <jointvel name="sens_j2_pitch_vel" joint="j2_pitch"/>
+        <jointvel name="sens_j2_yaw_vel"   joint="j2_yaw"/>
+        <jointvel name="sens_j3_pitch_vel" joint="j3_pitch"/>
+        <jointvel name="sens_j3_yaw_vel"   joint="j3_yaw"/>
+        <jointvel name="sens_j4_pitch_vel" joint="j4_pitch"/>
+        <jointvel name="sens_j4_yaw_vel"   joint="j4_yaw"/>
+        <jointvel name="sens_j5_pitch_vel" joint="j5_pitch"/>
+        <jointvel name="sens_j5_yaw_vel"   joint="j5_yaw"/>
+        
+        <!-- Tip (end effector) position sensor -->
+        <framepos name="sens_tip_pos" objtype="site" objname="tip"/>
+        
+        <!-- Tip orientation sensor (rotation matrix) -->
+        <framexaxis name="sens_tip_xaxis" objtype="site" objname="tip"/>
+        <frameyaxis name="sens_tip_yaxis" objtype="site" objname="tip"/>
+        <framezaxis name="sens_tip_zaxis" objtype="site" objname="tip"/>
+    </sensor>
+
+</mujoco>
