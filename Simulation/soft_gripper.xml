@@ -1,0 +1,56 @@
+<mujoco model="soft_gripper">
+    <option timestep="0.002" gravity="0 0 -9.81"/>
+
+    <worldbody>
+        <!-- Ground -->
+        <geom type="plane" size="2 2 0.1" rgba="0.9 0.9 0.9 1"/>
+
+        <!-- Object to grasp -->
+        <body name="object" pos="0.15 0 0.03">
+            <geom type="sphere" size="0.025" mass="0.05" rgba="1 0 0 1"/>
+        </body>
+
+        <!-- Soft robot base -->
+        <body name="base" pos="0 0 0.03">
+            <geom name="base_geom" type="cylinder" fromto="0 0 0 0.03 0 0" size="0.01"/>
+            <site name="base_site" pos="0 0 0" size="0.002"/>
+
+            <!-- Segments -->
+            <body name="seg1" pos="0.03 0 0">
+                <joint type="hinge" axis="0 1 0" damping="1"/>
+                <geom name="seg1_geom" type="cylinder" fromto="0 0 0 0.03 0 0" size="0.01"/>
+                <site name="seg1_site" pos="0.03 0 0" size="0.002"/>
+
+                <body name="seg2" pos="0.03 0 0">
+                    <joint type="hinge" axis="0 1 0" damping="1"/>
+                    <geom name="seg2_geom" type="cylinder" fromto="0 0 0 0.03 0 0" size="0.01"/>
+                    <site name="seg2_site" pos="0.03 0 0" size="0.002"/>
+
+                    <body name="seg3" pos="0.03 0 0">
+                        <joint type="hinge" axis="0 1 0" damping="1"/>
+                        <geom name="seg3_geom" type="cylinder" fromto="0 0 0 0.03 0 0" size="0.01"/>
+                        <site name="seg3_site" pos="0.03 0 0" size="0.002"/>
+                    </body>
+                </body>
+            </body>
+        </body>
+    </worldbody>
+
+    <!-- Tendon (cable) -->
+    <tendon>
+        <spatial name="wrap_cable">
+            <site site="base_site"/>
+            <geom geom="seg1_geom"/>
+            <site site="seg1_site"/>
+            <geom geom="seg2_geom"/>
+            <site site="seg2_site"/>
+            <geom geom="seg3_geom"/>
+            <site site="seg3_site"/>
+        </spatial>
+    </tendon>
+
+    <!-- Actuator -->
+    <actuator>
+        <motor tendon="wrap_cable" ctrlrange="0 1" gear="20"/>
+    </actuator>
+</mujoco>
