@@ -1,0 +1,113 @@
+<mujoco model="soft_tentacle_grasper">
+
+    <!-- ===================== -->
+    <!-- Compiler & Options -->
+    <!-- ===================== -->
+    <compiler angle="radian" meshdir="meshes"/>
+    <option timestep="0.002" gravity="0 0 -9.81"/>
+
+    <!-- ===================== -->
+    <!-- Default Parameters -->
+    <!-- ===================== -->
+    <default>
+        <joint damping="1.0"/>
+        <geom friction="1.0 0.5 0.001" density="800"/>
+        <site size="0.002" rgba="0 0 1 1"/>
+    </default>
+
+    <!-- ===================== -->
+    <!-- Assets -->
+    <!-- ===================== -->
+    <asset>
+        <mesh name="robot_mesh" file="robot.stl"/>
+    </asset>
+
+    <!-- ===================== -->
+    <!-- World -->
+    <!-- ===================== -->
+    <worldbody>
+
+        <!-- Ground -->
+        <geom type="plane" size="2 2 0.1" rgba="0.9 0.9 0.9 1"/>
+
+        <!-- Object to grasp -->
+        <body name="object" pos="0.14 0 0.035">
+            <geom type="sphere" size="0.025" mass="0.05" rgba="1 0 0 1"/>
+        </body>
+
+        <!-- ===================== -->
+        <!-- Soft Robot -->
+        <!-- ===================== -->
+        <body name="robot_base" pos="0 0 0.03">
+
+            <!-- Free base -->
+            <joint type="free"/>
+
+            <!-- Simple visible base (replace mesh for clear visualization) -->
+            <geom name="base_geom" type="box" size="0.03 0.03 0.015" pos="0 0 0.02" rgba="0.5 0.5 0.5 1"/>
+
+            <!-- ===================== -->
+            <!-- Cable Routing Sites -->
+            <!-- ===================== -->
+            <site name="s0" pos="0.00  0.00 0.03"/>
+            <site name="s1" pos="0.03  0.00 0.03"/>
+            <site name="s2" pos="0.06  0.00 0.03"/>
+            <site name="s3" pos="0.09  0.00 0.03"/>
+            <site name="s4" pos="0.12  0.00 0.03"/>
+
+            <!-- ===================== -->
+            <!-- Virtual Soft Joints -->
+            <!-- ===================== -->
+            <body name="seg1" pos="0.03 0 0.03">
+                <joint name="j1" type="hinge" axis="0 1 0"/>
+                <geom name="seg1_geom" type="capsule" fromto="0 0 -0.04 0 0 0.04" size="0.02" rgba="0.2 0.4 0.9 1"/>
+                <site name="seg1_tip" pos="0 0 0.04" size="0.006"/>
+            </body>
+
+            <body name="seg2" pos="0.06 0 0.03">
+                <joint name="j2" type="hinge" axis="0 1 0"/>
+                <geom name="seg2_geom" type="capsule" fromto="0 0 -0.04 0 0 0.04" size="0.02" rgba="0.2 0.5 0.9 1"/>
+                <site name="seg2_tip" pos="0 0 0.04" size="0.006"/>
+            </body>
+
+            <body name="seg3" pos="0.09 0 0.03">
+                <joint name="j3" type="hinge" axis="0 1 0"/>
+                <geom name="seg3_geom" type="capsule" fromto="0 0 -0.04 0 0 0.04" size="0.02" rgba="0.2 0.6 0.9 1"/>
+                <site name="seg3_tip" pos="0 0 0.04" size="0.006"/>
+            </body>
+
+            <body name="seg4" pos="0.12 0 0.03">
+                <joint name="j4" type="hinge" axis="0 1 0"/>
+                <geom name="seg4_geom" type="capsule" fromto="0 0 -0.04 0 0 0.04" size="0.02" rgba="0.2 0.7 0.9 1"/>
+                <site name="seg4_tip" pos="0 0 0.04" size="0.006"/>
+            </body>
+
+            <!-- Camera for clear viewing -->
+            <camera name="maincam" pos="0.22 -0.4 0.12" euler="15 45 0"/>
+
+        </body>
+    </worldbody>
+
+    <!-- ===================== -->
+    <!-- Tendon (Cable) -->
+    <!-- ===================== -->
+    <tendon>
+        <spatial name="wrap_cable" width="0.003">
+            <site site="s0"/>
+            <site site="s1"/>
+            <site site="s2"/>
+            <site site="s3"/>
+            <site site="s4"/>
+        </spatial>
+    </tendon>
+
+    <!-- ===================== -->
+    <!-- Actuator -->
+    <!-- ===================== -->
+    <actuator>
+        <motor tendon="wrap_cable"
+               gear="30"
+               ctrlrange="0 1"/>
+    </actuator>
+
+</mujoco>

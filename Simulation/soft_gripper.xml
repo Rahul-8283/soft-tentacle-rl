@@ -3,42 +3,73 @@
 
     <worldbody>
         <!-- Ground -->
-        <geom type="plane" size="2 2 0.1" rgba="0.9 0.9 0.9 1"/>
+        <geom type="plane" size="3 3 0.1" rgba="0.9 0.9 0.9 1"/>
 
         <!-- Object to grasp -->
-        <body name="object" pos="0.15 0 0.03">
-            <geom type="sphere" size="0.025" mass="0.05" rgba="1 0 0 1"/>
+        <body name="object" pos="0 0 0.2">
+            <geom type="sphere" size="0.03" mass="0.1" rgba="1 0 0 1"/>
         </body>
 
         <!-- Soft robot base -->
-        <body name="base" pos="0 0 0.03">
-            <geom name="base_geom" type="cylinder" fromto="0 0 0 0.03 0 0" size="0.01"/>
-            <site name="base_site" pos="0 0 0" size="0.002"/>
+        <body name="base" pos="0 0 0.05">
+            <geom name="base_geom" type="box" size="0.02 0.02 0.05" rgba="0.5 0.5 0.5 1"/>
+            <site name="base_site" pos="0 0 0.05" size="0.003"/>
 
-            <!-- Segments -->
-            <body name="seg1" pos="0.03 0 0">
-                <joint type="hinge" axis="0 1 0" damping="1"/>
-                <geom name="seg1_geom" type="cylinder" fromto="0 0 0 0.03 0 0" size="0.01"/>
-                <site name="seg1_site" pos="0.03 0 0" size="0.002"/>
+            <!-- Segment 1 -->
+            <body name="seg1" pos="0 0 0.1">
+                <joint type="ball" damping="2"/>
+                <geom name="seg1_geom" type="cylinder" size="0.015 0.04" rgba="0.8 0.8 1 1"/>
+                <site name="seg1_site" pos="0 0 0.04" size="0.003"/>
 
-                <body name="seg2" pos="0.03 0 0">
-                    <joint type="hinge" axis="0 1 0" damping="1"/>
-                    <geom name="seg2_geom" type="cylinder" fromto="0 0 0 0.03 0 0" size="0.01"/>
-                    <site name="seg2_site" pos="0.03 0 0" size="0.002"/>
+                <!-- Segment 2 -->
+                <body name="seg2" pos="0 0 0.08">
+                    <joint type="ball" damping="2"/>
+                    <geom name="seg2_geom" type="cylinder" size="0.015 0.04" rgba="0.8 0.8 1 1"/>
+                    <site name="seg2_site" pos="0 0 0.04" size="0.003"/>
 
-                    <body name="seg3" pos="0.03 0 0">
-                        <joint type="hinge" axis="0 1 0" damping="1"/>
-                        <geom name="seg3_geom" type="cylinder" fromto="0 0 0 0.03 0 0" size="0.01"/>
-                        <site name="seg3_site" pos="0.03 0 0" size="0.002"/>
+                    <!-- Segment 3 -->
+                    <body name="seg3" pos="0 0 0.08">
+                        <joint type="ball" damping="2"/>
+                        <geom name="seg3_geom" type="cylinder" size="0.015 0.04" rgba="0.8 0.8 1 1"/>
+                        <site name="seg3_site" pos="0 0 0.04" size="0.003"/>
+
+                        <!-- Segment 4 -->
+                        <body name="seg4" pos="0 0 0.08">
+                            <joint type="ball" damping="2"/>
+                            <geom name="seg4_geom" type="cylinder" size="0.015 0.04" rgba="0.8 0.8 1 1"/>
+                            <site name="seg4_site" pos="0 0 0.04" size="0.003"/>
+
+                            <!-- Segment 5 -->
+                            <body name="seg5" pos="0 0 0.08">
+                                <joint type="ball" damping="2"/>
+                                <geom name="seg5_geom" type="cylinder" size="0.015 0.04" rgba="0.8 0.8 1 1"/>
+                                <site name="seg5_site" pos="0 0 0.04" size="0.003"/>
+
+                                <!-- Segment 6 -->
+                                <body name="seg6" pos="0 0 0.08">
+                                    <joint type="ball" damping="2"/>
+                                    <geom name="seg6_geom" type="cylinder" size="0.015 0.04" rgba="0.8 0.8 1 1"/>
+                                    <site name="seg6_site" pos="0 0 0.04" size="0.003"/>
+
+                                    <!-- Segment 7 (tip) -->
+                                    <body name="seg7" pos="0 0 0.08">
+                                        <joint type="ball" damping="2"/>
+                                        <geom name="seg7_geom" type="sphere" size="0.018" rgba="0.8 0.8 1 1"/>
+                                        <site name="seg7_site" pos="0 0 0" size="0.003"/>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
                     </body>
                 </body>
             </body>
         </body>
     </worldbody>
 
-    <!-- Tendon (cable) -->
+    <!-- Tendons (cables for bending) -->
     <tendon>
-        <spatial name="wrap_cable">
+        <!-- Main vertical tendon -->
+        <spatial name="tendon_main">
             <site site="base_site"/>
             <geom geom="seg1_geom"/>
             <site site="seg1_site"/>
@@ -46,11 +77,20 @@
             <site site="seg2_site"/>
             <geom geom="seg3_geom"/>
             <site site="seg3_site"/>
+            <geom geom="seg4_geom"/>
+            <site site="seg4_site"/>
+            <geom geom="seg5_geom"/>
+            <site site="seg5_site"/>
+            <geom geom="seg6_geom"/>
+            <site site="seg6_site"/>
+            <geom geom="seg7_geom"/>
+            <site site="seg7_site"/>
         </spatial>
     </tendon>
 
-    <!-- Actuator -->
+    <!-- Actuators -->
     <actuator>
-        <motor tendon="wrap_cable" ctrlrange="0 1" gear="20"/>
+        <!-- Main tendon actuator for reaching -->
+        <motor tendon="tendon_main" ctrlrange="-1 1" gear="10"/>
     </actuator>
 </mujoco>
